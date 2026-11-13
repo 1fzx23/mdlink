@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdlink"
+version = "1.0.0"
+description = "Markdown 链接与锚点体检工具：断链、锚点、大小写、外链一次查完"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "1fzx23" }]
+keywords = ["markdown", "link-checker", "documentation", "cli", "lint"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+mdlink = "mdlink:main"
+
+[project.urls]
+Homepage = "https://github.com/1fzx23/mdlink"
+Repository = "https://github.com/1fzx23/mdlink"
+
+[tool.setuptools]
+py-modules = ["mdlink"]
