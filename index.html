@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>mdlink · Markdown 链接与锚点体检</title>
+<meta name="description" content="一条命令查完 Markdown 文档里的断链、跑掉的锚点、大小写不一致的文件名和失效外链。零依赖，纯 Python 标准库。" />
+<style>
+  :root {
+    --bg: #0b0e14;
+    --bg-soft: #11151f;
+    --bg-card: #151b27;
+    --border: #232b3a;
+    --text: #e6edf3;
+    --dim: #9aa7b8;
+    --faint: #66748a;
+    --accent: #5eead4;
+    --accent-2: #7dd3fc;
+    --red: #fb7185;
+    --yellow: #fbbf24;
+    --green: #4ade80;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 420px at 82% -10%, rgba(94,234,212,.09), transparent 62%),
+      radial-gradient(700px 360px at 0% 0%, rgba(125,211,252,.07), transparent 58%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px 90px; }
+  code, pre { font-family: var(--mono); }
+
+  header.nav {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(11,14,20,.74);
+    border-bottom: 1px solid rgba(35,43,58,.7);
+  }
+  .nav-inner { max-width: 940px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between; height: 58px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .brand .dot { width: 11px; height: 11px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 14px rgba(94,234,212,.65); }
+  .brand span { font-family: var(--mono); letter-spacing: .5px; }
+  .brand small { color: var(--faint); font-weight: 500; font-size: 12px; font-family: var(--mono); }
+  .nav-links { display: flex; gap: 20px; font-size: 13.5px; color: var(--dim); }
+  .nav-links a:hover { color: var(--accent); }
+
+  .hero { padding: 72px 0 20px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px;
+    color: var(--accent); border: 1px solid var(--border); background: var(--bg-soft);
+    padding: 5px 13px; border-radius: 999px; margin-bottom: 20px; font-family: var(--mono); }
+  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.18; margin: 0 0 16px; letter-spacing: -.5px; }
+  h1 .grad { background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: 17px; color: var(--dim); max-width: 640px; margin: 0 0 28px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 46px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+    border-radius: 10px; font-size: 14px; font-weight: 600; border: 1px solid var(--border);
+    transition: .18s; }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06121a; border-color: transparent; }
+  .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(94,234,212,.25); }
+  .btn.ghost { color: var(--dim); background: var(--bg-soft); }
+  .btn.ghost:hover { color: var(--text); border-color: var(--accent); }
+
+  /* 终端 */
+  .term { background: #0d1117; border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.45); margin-bottom: 20px; }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px;
+    background: #0a0d13; border-bottom: 1px solid var(--border); }
+  .term-bar i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .term-bar .r { background: #ff5f57; } .term-bar .y { background: #febc2e; } .term-bar .g { background: #28c840; }
+  .term-bar span { margin-left: 8px; font-size: 12px; color: var(--faint); font-family: var(--mono); }
+  .term pre { margin: 0; padding: 18px 20px; font-size: 12.5px; line-height: 1.75;
+    overflow-x: auto; color: #c9d4e1; }
+  .c-dim { color: #6b7a8d; }
+  .c-cyan { color: var(--accent); }
+  .c-red { color: var(--red); }
+  .c-broken { color: #ff8fa3; }
+  .c-yellow { color: var(--yellow); }
+  .c-green { color: var(--green); }
+
+  section { margin-top: 64px; }
+  h2 { font-size: 21px; margin: 0 0 8px; letter-spacing: -.2px; }
+  .sub { color: var(--faint); font-size: 13.5px; margin: 0 0 24px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 14px; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 13px;
+    padding: 18px 20px; transition: .18s; }
+  .card:hover { border-color: rgba(94,234,212,.35); transform: translateY(-2px); }
+  .card .ico { font-size: 19px; margin-bottom: 8px; }
+  .card h3 { font-size: 14.5px; margin: 0 0 6px; }
+  .card p { margin: 0; font-size: 13px; color: var(--dim); }
+  .card code { font-size: 12px; color: var(--accent); background: rgba(94,234,212,.08);
+    padding: 1px 6px; border-radius: 5px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 4px; }
+  th { text-align: left; color: var(--faint); font-weight: 500; font-size: 12px;
+    letter-spacing: .4px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(35,43,58,.6); color: var(--dim); }
+  td:first-child { color: var(--text); }
+  tr:hover td { background: rgba(94,234,212,.03); }
+  .tag { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; }
+  .tag.b { background: rgba(251,113,133,.14); color: var(--red); }
+  .tag.w { background: rgba(251,191,36,.14); color: var(--yellow); }
+
+  .codebox { background: #0d1117; border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px; overflow-x: auto; margin: 0; font-size: 13px; line-height: 1.85; color: #c9d4e1; }
+  .codebox .cm { color: #6b7a8d; }
+  .codebox .k { color: var(--accent-2); }
+  .codebox .s { color: #a5d6a7; }
+
+  footer { margin-top: 70px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--faint); font-size: 12.5px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <i class="dot"></i><span>mdlink</span><small>v1.0.0</small>
+    </div>
+    <nav class="nav-links">
+      <a href="#features">特性</a>
+      <a href="#issues">能查什么</a>
+      <a href="#usage">用法</a>
+      <a href="#ci">CI</a>
+      <a href="https://github.com/1fzx23/mdlink">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="pill">Markdown 文档体检 · 零依赖 · 离线可用</div>
+    <h1>文档里的<span class="grad">断链</span>，<br />不该等到读者点开才发现。</h1>
+    <p class="lead">
+      改个标题，「安装步骤」的锚点就全废了；挪个目录，相对路径全 404；
+      在自己电脑上一切正常，推到 GitHub 却打不开 —— 因为大小写。
+      mdlink 一条命令把这些全查出来，还告诉你该怎么改。
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/1fzx23/mdlink">查看源码 →</a>
+      <a class="btn ghost" href="#usage">先看怎么用</a>
+    </div>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">
+      <i class="r"></i><i class="y"></i><i class="g"></i>
+      <span>bash — mdlink examples/messy</span>
+    </div>
+<pre><span class="c-cyan">mdlink v1.0.0</span> <span class="c-dim">· 3 个文件 · 19 条链接</span>
+<span class="c-dim">  18 本地 / 0 锚点 / 1 外链</span>
+
+<span class="c-broken">✗ 断链 (7)</span>
+  <span class="c-cyan">examples/messy/README.md:15</span>  <span class="c-red">missing-target</span>
+                               <span class="c-dim">→ docs/deploy.md</span>
+                               目标不存在：examples/messy/docs/deploy.md
+  <span class="c-cyan">examples/messy/README.md:17</span>  <span class="c-red">missing-anchor</span>
+                               <span class="c-dim">→ docs/guide.md#配置文件参考</span>
+                               examples/messy/docs/guide.md 里没有锚点 #配置文件参考
+                               <span class="c-yellow">↳ 最接近的锚点是 #配置文件</span>
+  <span class="c-cyan">examples/messy/README.md:19</span>  <span class="c-red">empty-dest</span>
+                               <span class="c-dim">→ (空)</span>
+                               链接目标为空
+
+<span class="c-yellow">! 警告 (2)</span>
+  <span class="c-cyan">examples/messy/README.md:16</span>  <span class="c-yellow">case-mismatch</span>
+                               <span class="c-dim">→ docs/API.md</span>
+                               大小写与磁盘实际文件名不一致（Linux/GitHub 上会 404）
+                               <span class="c-yellow">↳ API.md → api.md</span>
+
+合计 19 · <span class="c-green">通过 10</span> · <span class="c-broken">断链 7</span> · <span class="c-yellow">警告 2</span>
+<span class="c-dim">耗时 0.12s · 根目录 /home/me/project</span></pre>
+  </div>
+
+  <section id="features">
+    <h2>为什么不是又一个链接检查器</h2>
+    <p class="sub">大部分工具只联网确认 URL 能不能打开。写文档时真正坑人的不是那件事。</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">🎯</div>
+        <h3>锚点按 GitHub 规则重算</h3>
+        <p>小写、去标点、空格转 <code>-</code>、重复标题加 <code>-1</code>。中文标题也认，<code>## 快速安装</code> → <code>#快速安装</code>。</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔠</div>
+        <h3>专查「本地能跑，上线 404」</h3>
+        <p>Windows 和 macOS 文件名不分大小写，Git、Linux 分。逐段比对磁盘真实名字，提前拦住 <code>docs/API.md</code> 这种坑。</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧹</div>
+        <h3>不把示例代码当真链接</h3>
+        <p>围栏代码块和行内代码先被遮罩成等长空格，<code>[示例](foo.md)</code> 这种教学写法一条都不会误报。</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔌</div>
+        <h3>默认一个请求都不发</h3>
+        <p>只有加 <code>-x</code> 才联网。CI 里跑结果完全确定，不会因为网络抖动忽然变红。</p>
+      </div>
+      <div class="card">
+        <div class="ico">💡</div>
+        <h3>直接给修复建议</h3>
+        <p>锚点写错，告诉你最接近的是哪个；文件名拼错，告诉你是不是 <code>xxx</code>。不用自己翻目录找。</p>
+      </div>
+      <div class="card">
+        <div class="ico">📦</div>
+        <h3>单文件零依赖</h3>
+        <p>一个 <code>mdlink.py</code> 就能跑，Python 3.9+，不需要装任何包。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="issues">
+    <h2>能查出的问题</h2>
+    <p class="sub">断链会让命令以退出码 1 结束，警告只提示、不影响 CI。</p>
+    <table>
+      <thead>
+        <tr><th>类型</th><th>级别</th><th>含义</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>missing-target</code></td><td><span class="tag b">断链</span></td><td>路径指向的文件不存在</td></tr>
+        <tr><td><code>missing-anchor</code></td><td><span class="tag b">断链</span></td><td>目标文件里没有这个 <code>#锚点</code></td></tr>
+        <tr><td><code>empty-dest</code></td><td><span class="tag b">断链</span></td><td><code>[文字]()</code> 目标为空</td></tr>
+        <tr><td><code>case-mismatch</code></td><td><span class="tag w">警告</span></td><td>大小写与磁盘实际文件名不一致</td></tr>
+        <tr><td><code>dir-target</code></td><td><span class="tag w">警告</span></td><td>链接指向目录（需 <code>--dirs</code>）</td></tr>
+        <tr><td><code>http-status</code></td><td><span class="tag b">断链</span> / <span class="tag w">警告</span></td><td>外链 404 为断链，其余 4xx/5xx 为警告</td></tr>
+        <tr><td><code>unreachable</code></td><td><span class="tag w">警告</span></td><td>连不上：DNS / 超时 / SSL / 被墙</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="usage">
+    <h2>用法</h2>
+    <p class="sub">克隆下来直接跑，或者 pipx install . 装到 PATH。</p>
+<pre class="codebox"><span class="cm"># 扫当前目录所有 Markdown</span>
+mdlink .
+
+<span class="cm"># 只查指定文件 / 目录</span>
+mdlink <span class="k">README.md</span> docs/
+
+<span class="cm"># 顺便探测外部链接（12 并发，8 秒超时）</span>
+mdlink . <span class="k">-x</span>
+
+<span class="cm"># 出 HTML 报告</span>
+mdlink . <span class="k">-f</span> html <span class="k">-o</span> link-report.html
+
+<span class="cm"># 忽略本地开发地址</span>
+mdlink . <span class="k">-x</span> <span class="k">--ignore</span> <span class="s">"localhost|127\.0\.0\.1"</span>
+
+<span class="cm"># 不确定锚点怎么写？问它</span>
+mdlink <span class="k">--list-anchors</span> docs/guide.md</pre>
+    <p class="sub" style="margin-top:18px">输出格式支持 <code>text</code> / <code>json</code> / <code>md</code> / <code>html</code>；退出码 0 通过、1 有断链、2 参数错误。</p>
+  </section>
+
+  <section id="ci">
+    <h2>接进 CI</h2>
+    <p class="sub">PR 里改坏了文档链接，直接让流水线红掉。</p>
+<pre class="codebox"><span class="cm"># .github/workflows/docs.yml</span>
+<span class="k">name</span>: docs
+<span class="k">on</span>: [push, pull_request]
+<span class="k">jobs</span>:
+  <span class="k">links</span>:
+    <span class="k">runs-on</span>: ubuntu-latest
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: actions/checkout@v4
+      - <span class="k">uses</span>: actions/setup-python@v5
+        <span class="k">with</span>: { python-version: <span class="s">"3.12"</span> }
+      - <span class="k">name</span>: 检查文档链接
+        <span class="k">run</span>: python mdlink.py . <span class="k">--no-color</span></pre>
+  </section>
+
+  <footer>
+    <span>mdlink v1.0.0 · MIT License · 零第三方依赖</span>
+    <span><a href="https://github.com/1fzx23/mdlink">GitHub</a> · <a href="https://1fzx23.github.io/my-tools/">返回工具箱</a></span>
+  </footer>
+
+</div>
+</body>
+</html>
