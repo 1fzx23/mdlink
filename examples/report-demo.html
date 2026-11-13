@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>mdlink 链接体检报告</title>
+<style>
+  :root {
+    --bg:#0b0e14; --card:#151b27; --border:#232b3a; --text:#e6edf3;
+    --dim:#9aa7b8; --faint:#66748a; --accent:#5eead4; --red:#fb7185;
+    --yellow:#fbbf24; --green:#4ade80;
+    --mono: "SFMono-Regular", Consolas, Menlo, monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6; }
+  .wrap { max-width:1040px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:26px; margin:0 0 6px; letter-spacing:.3px; }
+  .sub { color:var(--faint); font-size:13px; font-family:var(--mono); margin-bottom:28px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:30px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .card .k { font-size:12px; color:var(--faint); letter-spacing:.5px; }
+  .card .v { font-size:28px; font-weight:700; font-family:var(--mono); margin-top:4px; }
+  .card.ok .v { color:var(--green); }
+  .card.bad .v { color:var(--red); }
+  .card.warn .v { color:var(--yellow); }
+  h2 { font-size:16px; margin:32px 0 12px; color:var(--dim); font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:var(--faint); font-weight:500; padding:8px 10px;
+        border-bottom:1px solid var(--border); font-size:12px; letter-spacing:.4px; }
+  td { padding:9px 10px; border-bottom:1px solid rgba(35,43,58,.6); vertical-align:top; }
+  tr:hover td { background:rgba(94,234,212,.03); }
+  code { font-family:var(--mono); font-size:12px; color:var(--accent); }
+  .tag { display:inline-block; font-size:11px; padding:1px 8px; border-radius:999px; font-family:var(--mono); }
+  .tag.broken { background:rgba(251,113,133,.14); color:var(--red); }
+  .tag.warn { background:rgba(251,191,36,.14); color:var(--yellow); }
+  .dest { font-family:var(--mono); font-size:12px; color:var(--dim); word-break:break-all; }
+  .hint { color:var(--yellow); font-size:12px; }
+  .empty { text-align:center; padding:60px 0; color:var(--green); font-size:15px; }
+  footer { margin-top:40px; color:var(--faint); font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>mdlink 链接体检报告</h1>
+  <div class="sub">C:\Users\pc\WorkBuddy\20260806085400\mdlink  ·  2026-11-13 12:37:11</div>
+  <div class="cards">
+    <div class="card"><div class="k">文件</div><div class="v">3</div></div>
+    <div class="card"><div class="k">链接总数</div><div class="v">19</div></div>
+    <div class="card ok"><div class="k">通过</div><div class="v">10</div></div>
+    <div class="card bad"><div class="k">断链</div><div class="v">7</div></div>
+    <div class="card warn"><div class="k">警告</div><div class="v">2</div></div>
+  </div>
+  <h2>问题清单</h2><table><thead><tr><th>严重度</th><th>位置</th><th>类型</th><th>目标</th><th>说明</th></tr></thead><tbody>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:15</code></td><td>missing-target</td><td><div class="dest">docs/deploy.md</div></td><td>目标不存在：examples/messy/docs/deploy.md</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:17</code></td><td>missing-anchor</td><td><div class="dest">docs/guide.md#配置文件参考</div></td><td>examples/messy/docs/guide.md 里没有锚点 #配置文件参考</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:18</code></td><td>missing-anchor</td><td><div class="dest">docs/guide.md#nope</div></td><td>examples/messy/docs/guide.md 里没有锚点 #nope</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:19</code></td><td>empty-dest</td><td><div class="dest">(空)</div></td><td>链接目标为空</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:23</code></td><td>missing-target</td><td><div class="dest">assets/missing.png</div></td><td>目标不存在：examples/messy/assets/missing.png</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:25</code></td><td>missing-target</td><td><div class="dest">./docs/nonexistent.md</div></td><td>目标不存在：examples/messy/docs/nonexistent.md</td></tr>
+  <tr><td><span class="tag broken">断链</span></td><td><code>examples/messy/README.md:46</code></td><td>missing-target</td><td><div class="dest">./nope.md</div></td><td>目标不存在：examples/messy/nope.md</td></tr>
+  <tr><td><span class="tag warn">警告</span></td><td><code>examples/messy/README.md:16</code></td><td>case-mismatch</td><td><div class="dest">docs/API.md</div></td><td>大小写与磁盘实际文件名不一致（Linux/GitHub 上会 404）<div class="hint">↳ API.md → api.md</div></td></tr>
+  <tr><td><span class="tag warn">警告</span></td><td><code>examples/messy/README.md:21</code></td><td>case-mismatch</td><td><div class="dest">assets/logo.PNG</div></td><td>大小写与磁盘实际文件名不一致（Linux/GitHub 上会 404）<div class="hint">↳ logo.PNG → logo.png</div></td></tr>
+  </tbody></table>
+  <footer>由 mdlink v1.0.0 生成 · 2026-11-13 12:37</footer>
+</div>
+</body>
+</html>
+
